@@ -1,0 +1,58 @@
+services:
+  server:
+    restart: always
+    build: server
+    environment:
+      PORT: 8080
+      PG_USER: "postgres"
+      PG_DB: "area"
+      PG_PASSWORD: "postgres"
+      PG_HOST: "postgres"
+      PG_PORT: 5432
+      SECRET: "#jesuissecret"
+    ports:
+      - "443:8080"
+    networks:
+      - back
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  client_web:
+    build: client_web
+    #depends_on:
+      #- server
+      #- client_mobile
+    ports:
+      - "80:3000"
+    volumes:
+      - client:/home/public
+
+  client_mobile:
+    build: client_mobile
+    volumes:
+      - client:/home/apk
+
+  postgres:
+    image: postgres:latest
+    restart: on-failure
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DB: "area"
+      POSTGRES_PORT: 5432
+    networks:
+      - back
+    volumes:
+      - ./server/db_init.sql:/docker-entrypoint-initdb.d/db_init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  client:
+
+networks:
+  back:
